@@ -125,7 +125,7 @@ def verify():
 def analyze_movie():
     try:
         data = request.get_json() or {}
-        title = data.get("title")
+        title = data.get("title") or data.get("movie_name")
 
         if not title:
             return jsonify({"error": "Title is required"}), 400
