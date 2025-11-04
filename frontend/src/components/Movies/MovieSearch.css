@@ -5,36 +5,23 @@
   margin: 0 auto;
 }
 
+/* ⭐ Search Header */
 .search-header {
   text-align: center;
   margin-bottom: 48px;
 }
-
-.imdb-rating {
-  font-size: 1.1rem;
-  margin-top: 6px;
-}
-
-.stars {
-  color: #f5c518; /* IMDb Gold */
-  font-size: 1.3rem;
-  font-weight: bold;
-}
-
 .search-header h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 12px;
   font-size: 42px;
   color: white;
-  margin-bottom: 16px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  margin-bottom: 8px;
 }
-
 .search-header p {
   font-size: 18px;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .search-content {
@@ -42,10 +29,7 @@
   gap: 24px;
 }
 
-.search-form-section {
-  background: white;
-}
-
+/* 🔍 Search Box */
 .search-input-group {
   display: flex;
   align-items: center;
@@ -53,13 +37,11 @@
   padding: 16px;
   border: 2px solid #e5e7eb;
   border-radius: 12px;
-  transition: border-color 0.3s;
+  transition: 0.3s;
 }
-
 .search-input-group:focus-within {
   border-color: #667eea;
 }
-
 .search-input {
   flex: 1;
   border: none;
@@ -67,122 +49,44 @@
   outline: none;
 }
 
+/* ⭐ Popular list */
 .popular-movies {
-  margin-top: 32px;
-  padding-top: 32px;
+  margin-top: 30px;
+  padding-top: 20px;
   border-top: 2px solid #e5e7eb;
 }
-
-.popular-movies h3 {
-  font-size: 18px;
-  color: #1f2937;
-  margin-bottom: 16px;
-}
-
 .popular-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
 }
-
 .popular-tag {
-  padding: 8px 16px;
-  border: 2px solid #e5e7eb;
-  background: white;
-  color: #374151;
-  border-radius: 20px;
-  cursor: pointer;
+  padding: 6px 14px;
   font-size: 14px;
-  transition: all 0.2s;
+  border: 2px solid #e5e7eb;
+  border-radius: 18px;
+  background: white;
+  cursor: pointer;
+  transition: 0.2s;
 }
-
 .popular-tag:hover {
   border-color: #667eea;
   color: #667eea;
-  transform: translateY(-2px);
 }
 
-.search-info {
-  margin-top: 32px;
-  padding-top: 32px;
-  border-top: 2px solid #e5e7eb;
-}
-
-.search-info h3 {
-  font-size: 18px;
-  color: #1f2937;
-  margin-bottom: 16px;
-}
-
-.search-info ul {
-  list-style: none;
-  padding: 0;
-  margin-bottom: 16px;
-}
-
-.search-info li {
-  padding: 8px 0;
-  padding-left: 24px;
-  position: relative;
-  color: #374151;
-}
-
-.search-info li::before {
-  content: '✓';
-  position: absolute;
-  left: 0;
-  color: #10b981;
-  font-weight: bold;
-}
-
-.info-note {
-  background: #eff6ff;
-  padding: 12px;
-  border-radius: 8px;
-  color: #1e40af;
-  font-size: 14px;
-}
-
-.search-error {
-  background: #fee2e2;
-  color: #991b1b;
-  text-align: center;
-  padding: 32px;
-}
-
-.error-hint {
-  margin-top: 8px;
-  font-size: 14px;
-  opacity: 0.8;
-}
-
+/* ✅ Results Section */
 .search-results {
   display: grid;
   gap: 24px;
 }
 
-.search-result-header {
-  background: white;
-  padding: 20px 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.search-result-header h2 {
-  font-size: 20px;
-  color: #374151;
-  margin: 0;
-}
-
-.searched-term {
-  color: #667eea;
-  font-weight: 700;
-}
-
-.result-movie-info {
+/* 🎬 Compact Movie Header */
+.compact-header {
   display: grid;
   grid-template-columns: 200px 1fr;
-  gap: 32px;
+  gap: 24px;
+  padding: 24px;
+  align-items: center;
 }
 
 .movie-poster-large {
@@ -190,198 +94,105 @@
   height: 300px;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-
 .movie-poster-large img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.poster-placeholder {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.movie-header-details {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.movie-details h2 {
+.movie-title {
   font-size: 32px;
-  color: #1f2937;
-  margin-bottom: 8px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.movie-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .movie-year {
   color: #6b7280;
-  font-size: 18px;
-  margin-bottom: 20px;
+  font-size: 16px;
 }
 
-.rating-section {
-  margin: 24px 0;
-}
-
-.rating-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.rating-value {
-  font-size: 32px;
+/* ⭐ IMDb Badge */
+.imdb-badge {
+  background: #f5c518;
+  color: #000;
+  padding: 4px 10px;
+  border-radius: 8px;
   font-weight: 700;
-  color: #1f2937;
-  margin-right: 8px;
+  font-size: 14px;
 }
 
-.rating-label {
+/* 🔥 Sentiment Badge */
+.sentiment-badge {
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  color: white;
   font-size: 14px;
-  color: #6b7280;
 }
-
-.rating-votes {
-  color: #6b7280;
-  font-size: 14px;
-  margin-left: 36px;
+.sentiment-badge.positive {
+  background: #10b981;
+}
+.sentiment-badge.neutral {
+  background: #6b7280;
+}
+.sentiment-badge.negative {
+  background: #ef4444;
 }
 
 .movie-plot {
-  margin-top: 24px;
-}
-
-.movie-plot h3 {
-  font-size: 18px;
-  color: #1f2937;
-  margin-bottom: 12px;
-}
-
-.movie-plot p {
   color: #374151;
-  line-height: 1.6;
+  font-size: 15px;
+  margin-top: 6px;
+  line-height: 1.5;
 }
 
-.result-sentiment-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
-
-.sentiment-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.sentiment-header h3 {
-  font-size: 24px;
-  margin: 0 16px 0 0;
-}
-
-.confidence-bar {
-  margin-top: 20px;
-}
-
-.confidence-label {
-  font-size: 16px;
-  margin-bottom: 12px;
-  font-weight: 600;
-}
-
-.confidence-progress {
-  height: 12px;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.confidence-fill {
-  height: 100%;
-  background: white;
-  border-radius: 6px;
-  transition: width 0.5s ease;
-}
-
-.result-charts-section h3 {
+/* 📊 Chart Card */
+.card h3 {
+  margin-bottom: 10px;
   font-size: 20px;
   color: #1f2937;
-  margin-bottom: 20px;
 }
 
-.plot-analysis-section h3 {
-  font-size: 20px;
-  color: #1f2937;
-  margin-bottom: 20px;
-}
-
-.plot-sentiment-details {
-  display: grid;
-  gap: 24px;
-}
-
-.sentiment-score {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px;
-  background: #f9fafb;
-  border-radius: 8px;
-}
-
-.score-label {
-  font-weight: 600;
-  color: #374151;
-}
-
-.score-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: #667eea;
-}
-
-.sentiment-breakdown {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
-
-.breakdown-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 16px;
-  background: #f9fafb;
-  border-radius: 8px;
-}
-
-.breakdown-label {
-  font-size: 14px;
-  color: #6b7280;
-  margin-bottom: 8px;
-}
-
-.breakdown-value {
-  font-size: 20px;
-  font-weight: 700;
-  color: #667eea;
-}
-
+/* 📱 Responsive */
 @media (max-width: 768px) {
-  .result-movie-info {
+  .compact-header {
     grid-template-columns: 1fr;
+    text-align: center;
   }
 
   .movie-poster-large {
-    width: 100%;
-    max-width: 200px;
+    width: 140px;
+    height: 210px;
     margin: 0 auto;
   }
 
-  .sentiment-breakdown {
-    grid-template-columns: 1fr;
+  .movie-title {
+    font-size: 26px;
+  }
+
+  .movie-meta {
+    justify-content: center;
+  }
+
+  .movie-plot {
+    margin: 10px auto 0;
   }
 }
