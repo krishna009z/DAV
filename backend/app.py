@@ -8,6 +8,7 @@ from bson.objectid import ObjectId
 from datetime import timedelta, datetime
 import bcrypt
 import os
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -19,7 +20,7 @@ app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret")
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "jwt-secret")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=24)
 
-# MongoDB Connection (Render: set DATABASE_URL to your MongoDB URI)
+# MongoDB Connection
 app.config["MONGO_URI"] = os.getenv(
     "DATABASE_URL",
     "mongodb+srv://dav:<db_password>@dav.kpmskka.mongodb.net/dav?retryWrites=true&w=majority"
@@ -31,6 +32,7 @@ mongo = PyMongo(app)
 
 users_col = mongo.db.users
 history_col = mongo.db.analysis_history
+
 
 # 🟦 AUTH ROUTES
 @app.route('/api/auth/signup', methods=['POST'])
@@ -101,7 +103,6 @@ def login():
         return jsonify({"error": str(e)}), 500
 
 
-
 @app.route('/api/auth/verify', methods=['GET'])
 @jwt_required()
 def verify():
@@ -119,7 +120,45 @@ def verify():
         return jsonify({"error": str(e)}), 500
 
 
-# 🟩 ANALYSIS + HISTORY
+# 🟩 ANALYSIS ROUTES
+@app.route("/api/analyze/movie", methods=["POST"])
+def analyze_movie():
+    try:
+        data = request.get_json() or {}
+        title = data.get("title")
+
+        if not title:
+            return jsonify({"error": "Title is required"}), 400
+
+        tmdb_key = os.getenv("TMDB_API_KEY")
+        if not tmdb_key:
+            return jsonify({"error": "TMDB API key missing"}), 500
+
+        url = "https://api.themoviedb.org/3/search/movie"
+        params = {"api_key": tmdb_key, "query": title}
+
+        response = requests.get(url, params=params)
+        results = response.json().get("results", [])
+
+        if not results:
+            return jsonify({"error": "Movie not found"}), 404
+
+        movie = results[0]
+
+        return jsonify({
+            "success": True,
+            "movie": {
+                "title": movie.get("title"),
+                "overview": movie.get("overview", ""),
+                "release_date": movie.get("release_date", "Unknown"),
+                "rating": movie.get("vote_average", 0)
+            }
+        }), 200
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/analyze/review", methods=["POST"])
 @jwt_required()
 def analyze_review():
@@ -170,7 +209,6 @@ def history():
     ]), 200
 
 
-# ✅ MongoDB connectivity test
 @app.route("/api/test-db", methods=["GET"])
 def test_db():
     try:
