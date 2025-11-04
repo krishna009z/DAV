@@ -139,59 +139,58 @@ def verify():
 def analyze_movie():
     try:
         data = request.get_json() or {}
-
         title = data.get("title")
         year = data.get("year", "")
 
-        if not title or title.strip() == "":
-            return jsonify({"error": "Title is required"}), 400
+        if not title:
+            return jsonify({"error": "Movie title required"}), 400
 
         omdb_api_key = os.getenv("OMDB_API_KEY")
         omdb_url = f"https://www.omdbapi.com/?t={title}&y={year}&apikey={omdb_api_key}"
 
         movie_resp = requests.get(omdb_url).json()
+        print("OMDB Response ✅", movie_resp)
 
         if movie_resp.get("Response") != "True":
-            raise Exception("Movie not found")
+            return jsonify({"error": "Movie not found in OMDB"}), 404
 
-        plot = movie_resp.get("Plot", "No plot available.")
-        poster = movie_resp.get("Poster", "")
-        imdb_rating = movie_resp.get("imdbRating") or "N/A"
+        plot = movie_resp.get("Plot", "No plot available")
+        poster = movie_resp.get("Poster") or None
+        imdb_rating = movie_resp.get("imdbRating")
+
+        # ✅ convert to float if valid
+        try:
+            imdb_rating = float(imdb_rating) if imdb_rating != "N/A" else None
+        except:
+            imdb_rating = None
+
         movie_year = movie_resp.get("Year", year)
 
-        # ✅ Sentiment Analysis
+        # ✅ Sentiment
         sentiment, polarity_percent = analyze_sentiment(plot)
-        confidence = round(polarity_percent / 100, 2)  # convert → 0 to 1
+        confidence = round(polarity_percent / 100, 2)
 
-        # ✅ Balanced & Realistic Chart Scores
-        if sentiment == "POSITIVE":
-            detailed_scores = {
-                "positive": confidence,
-                "neutral": round(1 - confidence, 2),
-                "negative": 0.0
-            }
-        elif sentiment == "NEGATIVE":
-            detailed_scores = {
-                "positive": 0.0,
-                "neutral": round(1 - confidence, 2),
-                "negative": confidence
-            }
-        else:  # NEUTRAL case
-            detailed_scores = {
-                "positive": round(0.3 * confidence, 2),
-                "neutral": round(1 - confidence, 2),
-                "negative": round(0.3 * confidence, 2)
-            }
+        # ✅ Pie + Bar chart data
+        detailed_scores = {
+            "positive": round((confidence if sentiment == "POSITIVE" else 0.15), 2),
+            "neutral": round((0.7 if sentiment == "NEUTRAL" else 0.2), 2),
+            "negative": round((confidence if sentiment == "NEGATIVE" else 0.15), 2)
+        }
+
+        # ✅ Normalize to 1.0 exactly
+        total = sum(detailed_scores.values())
+        for k in detailed_scores:
+            detailed_scores[k] = round(detailed_scores[k] / total, 2)
 
         return jsonify({
-            "sentiment": sentiment,
+            "sentiment": sentiment.lower(),  # ✅ lowercase for UI
             "confidence": confidence,
             "detailed_scores": detailed_scores,
             "sources": {
                 "imdb": {
                     "title": title,
                     "year": movie_year,
-                    "imdb_rating": imdb_rating,
+                    "imdb_rating": imdb_rating,  # ✅ REAL rating / null
                     "plot": plot,
                     "poster": poster
                 }
@@ -199,9 +198,27 @@ def analyze_movie():
         }), 200
 
     except Exception as e:
-        print("🔥 Movie Error:", str(e))
-        return jsonify({"error": "Movie not found or OMDB error"}), 500
-
+        print("🔥 Server Movie Error:", str(e))
+        return jsonify({
+            "error": "Movie analysis failed",
+            "details": str(e),
+            "sources": {
+                "imdb": {
+                    "title": title,
+                    "year": year,
+                    "imdb_rating": None,
+                    "plot": "Plot unavailable due to API error",
+                    "poster": None
+                }
+            },
+            "sentiment": "neutral",
+            "confidence": 0.0,
+            "detailed_scores": {
+                "positive": 0.33,
+                "neutral": 0.34,
+                "negative": 0.33
+            }
+        }), 500
 
 
 @app.route("/api/analyze/review", methods=["POST"])
