@@ -10,6 +10,17 @@
   margin-bottom: 48px;
 }
 
+.imdb-rating {
+  font-size: 1.1rem;
+  margin-top: 6px;
+}
+
+.stars {
+  color: #f5c518; /* IMDb Gold */
+  font-size: 1.3rem;
+  font-weight: bold;
+}
+
 .search-header h1 {
   display: flex;
   align-items: center;
