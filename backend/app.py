@@ -10,6 +10,7 @@ import bcrypt
 import os
 import requests
 from dotenv import load_dotenv
+from textblob import TextBlob  # ✅ Added for movie plot sentiment
 
 load_dotenv()
 
@@ -32,6 +33,19 @@ mongo = PyMongo(app)
 
 users_col = mongo.db.users
 history_col = mongo.db.analysis_history
+
+
+# ✅ Sentiment analysis function for movie plot
+def analyze_sentiment(text):
+    analysis = TextBlob(text)
+    polarity = analysis.sentiment.polarity
+
+    if polarity > 0.1:
+        return "POSITIVE", round(polarity * 100, 1)
+    elif polarity < -0.1:
+        return "NEGATIVE", round(abs(polarity) * 100, 1)
+    else:
+        return "NEUTRAL", round(abs(polarity) * 100, 1)
 
 
 # 🟦 AUTH ROUTES
@@ -121,40 +135,47 @@ def verify():
 
 
 # 🟩 ANALYSIS ROUTES
-@app.route("/api/analyze/movie", methods=["POST"])
+@app.route('/api/analyze/movie', methods=['POST'])
 def analyze_movie():
+    data = request.get_json() or {}
+
+    title = data.get("title")
+    year = data.get("year", "")
+
+    if not title or title.strip() == "":
+        return jsonify({"error": "Title is required"}), 400
+
+    omdb_api_key = os.getenv("OMDB_API_KEY")
+    omdb_url = f"https://www.omdbapi.com/?t={title}&y={year}&apikey={omdb_api_key}"
+
     try:
-        data = request.get_json() or {}
-        title = data.get("title") or data.get("movie_name")
+        movie_resp = requests.get(omdb_url).json()
+        print("OMDB Response:", movie_resp)
 
-        if not title:
-            return jsonify({"error": "Title is required"}), 400
+        if movie_resp.get("Response") == "True":
+            plot = movie_resp.get("Plot", "No plot available.")
+            poster = movie_resp.get("Poster", "")
+            imdb_rating = movie_resp.get("imdbRating") or "N/A"
+        else:
+            raise Exception("OMDB failed")
 
-        omdb_key = os.getenv("OMDB_API_KEY")
-        if not omdb_key:
-            return jsonify({"error": "OMDB API key missing"}), 500
+    except:
+        plot = "Mock plot — API unavailable."
+        poster = "https://via.placeholder.com/300x450?text=Movie+Poster"
+        imdb_rating = "N/A"
 
-        url = "https://www.omdbapi.com/"
-        params = {"apikey": omdb_key, "t": title}
+    sentiment, confidence = analyze_sentiment(plot)
 
-        response = requests.get(url, params=params)
-        movie = response.json()
+    return jsonify({
+        "title": title,
+        "year": year,
+        "imdb_rating": imdb_rating,
+        "plot": plot,
+        "poster": poster,
+        "sentiment": sentiment,
+        "confidence": confidence
+    }), 200
 
-        if movie.get("Response") == "False":
-            return jsonify({"error": "Movie not found"}), 404
-
-        return jsonify({
-            "success": True,
-            "movie": {
-                "title": movie.get("Title"),
-                "overview": movie.get("Plot", ""),
-                "release_date": movie.get("Released", "Unknown"),
-                "rating": movie.get("imdbRating", "N/A")
-            }
-        }), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/analyze/review", methods=["POST"])
 @jwt_required()
