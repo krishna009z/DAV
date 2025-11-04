@@ -130,34 +130,31 @@ def analyze_movie():
         if not title:
             return jsonify({"error": "Title is required"}), 400
 
-        tmdb_key = os.getenv("TMDB_API_KEY")
-        if not tmdb_key:
-            return jsonify({"error": "TMDB API key missing"}), 500
+        omdb_key = os.getenv("OMDB_API_KEY")
+        if not omdb_key:
+            return jsonify({"error": "OMDB API key missing"}), 500
 
-        url = "https://api.themoviedb.org/3/search/movie"
-        params = {"api_key": tmdb_key, "query": title}
+        url = "https://www.omdbapi.com/"
+        params = {"apikey": omdb_key, "t": title}
 
         response = requests.get(url, params=params)
-        results = response.json().get("results", [])
+        movie = response.json()
 
-        if not results:
+        if movie.get("Response") == "False":
             return jsonify({"error": "Movie not found"}), 404
-
-        movie = results[0]
 
         return jsonify({
             "success": True,
             "movie": {
-                "title": movie.get("title"),
-                "overview": movie.get("overview", ""),
-                "release_date": movie.get("release_date", "Unknown"),
-                "rating": movie.get("vote_average", 0)
+                "title": movie.get("Title"),
+                "overview": movie.get("Plot", ""),
+                "release_date": movie.get("Released", "Unknown"),
+                "rating": movie.get("imdbRating", "N/A")
             }
         }), 200
-    
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @app.route("/api/analyze/review", methods=["POST"])
 @jwt_required()
