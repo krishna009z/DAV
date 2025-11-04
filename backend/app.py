@@ -10,18 +10,17 @@ import bcrypt
 import os
 import requests
 from dotenv import load_dotenv
-from textblob import TextBlob  # ✅ Added for movie plot sentiment
+from textblob import TextBlob
 
 load_dotenv()
 
 app = Flask(__name__)
 
-# Basic Config
+# ----------------------- CONFIG -----------------------
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret")
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "jwt-secret")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=24)
 
-# MongoDB Connection
 app.config["MONGO_URI"] = os.getenv(
     "DATABASE_URL",
     "mongodb+srv://dav:<db_password>@dav.kpmskka.mongodb.net/dav?retryWrites=true&w=majority"
@@ -34,21 +33,20 @@ mongo = PyMongo(app)
 users_col = mongo.db.users
 history_col = mongo.db.analysis_history
 
-
-# ✅ Sentiment analysis function for movie plot
+# ---------------- SENTIMENT HELPERS --------------------
 def analyze_sentiment(text):
     analysis = TextBlob(text)
     polarity = analysis.sentiment.polarity
 
-    if polarity > 0.1:
-        return "POSITIVE", round(polarity * 100, 1)
-    elif polarity < -0.1:
-        return "NEGATIVE", round(abs(polarity) * 100, 1)
+    if polarity > 0.05:
+        return "positive", round(polarity, 3)
+    elif polarity < -0.05:
+        return "negative", round(abs(polarity), 3)
     else:
-        return "NEUTRAL", round(abs(polarity) * 100, 1)
+        return "neutral", round(abs(polarity), 3)
 
 
-# 🟦 AUTH ROUTES
+# ---------------------- AUTH -------------------------
 @app.route('/api/auth/signup', methods=['POST'])
 def signup():
     try:
@@ -66,7 +64,6 @@ def signup():
             return jsonify({"error": "Email already exists"}), 400
 
         hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
         user = {
             "username": username,
             "email": email,
@@ -75,7 +72,6 @@ def signup():
         }
         result = users_col.insert_one(user)
         user_id = str(result.inserted_id)
-
         token = create_access_token(identity=user_id)
 
         return jsonify({
@@ -96,14 +92,10 @@ def login():
         password = data.get('password')
 
         user = users_col.find_one({"username": username})
-        if not user:
-            return jsonify({"error": "Invalid credentials"}), 401
-
-        if not bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
+        if not user or not bcrypt.checkpw(password.encode('utf-8'), user['password'].encode('utf-8')):
             return jsonify({"error": "Invalid credentials"}), 401
 
         token = create_access_token(identity=str(user['_id']))
-
         return jsonify({
             "access_token": token,
             "user": {
@@ -134,7 +126,7 @@ def verify():
         return jsonify({"error": str(e)}), 500
 
 
-# 🟩 ANALYSIS ROUTES
+# -------------------- MOVIE ANALYSIS --------------------
 @app.route('/api/analyze/movie', methods=['POST'])
 def analyze_movie():
     try:
@@ -145,8 +137,8 @@ def analyze_movie():
         if not title:
             return jsonify({"error": "Movie title required"}), 400
 
-        omdb_api_key = os.getenv("OMDB_API_KEY")
-        omdb_url = f"https://www.omdbapi.com/?t={title}&y={year}&apikey={omdb_api_key}"
+        omdb_key = os.getenv("OMDB_API_KEY")
+        omdb_url = f"http://www.omdbapi.com/?t={title}&y={year}&apikey={omdb_key}"
 
         movie_resp = requests.get(omdb_url).json()
         print("OMDB Response ✅", movie_resp)
@@ -155,10 +147,11 @@ def analyze_movie():
             return jsonify({"error": "Movie not found in OMDB"}), 404
 
         plot = movie_resp.get("Plot", "No plot available")
-        poster = movie_resp.get("Poster") or None
+        poster = movie_resp.get("Poster") if movie_resp.get("Poster") not in ["N/A", None] else None
         imdb_rating = movie_resp.get("imdbRating")
+        imdb_votes = movie_resp.get("imdbVotes", "N/A")
 
-        # ✅ convert to float if valid
+        # Convert rating to float safely
         try:
             imdb_rating = float(imdb_rating) if imdb_rating != "N/A" else None
         except:
@@ -166,31 +159,27 @@ def analyze_movie():
 
         movie_year = movie_resp.get("Year", year)
 
-        # ✅ Sentiment
-        sentiment, polarity_percent = analyze_sentiment(plot)
-        confidence = round(polarity_percent / 100, 2)
+        # ✅ Sentiment values
+        sentiment, polarity = analyze_sentiment(plot)
+        confidence = round(abs(polarity), 2)
 
-        # ✅ Pie + Bar chart data
-        detailed_scores = {
-            "positive": round((confidence if sentiment == "POSITIVE" else 0.15), 2),
-            "neutral": round((0.7 if sentiment == "NEUTRAL" else 0.2), 2),
-            "negative": round((confidence if sentiment == "NEGATIVE" else 0.15), 2)
-        }
+        # ✅ Detailed pie/bar distribution
+        base = {"positive": 0.20, "neutral": 0.60, "negative": 0.20}
+        base[sentiment] = confidence if confidence > base[sentiment] else base[sentiment]
 
-        # ✅ Normalize to 1.0 exactly
-        total = sum(detailed_scores.values())
-        for k in detailed_scores:
-            detailed_scores[k] = round(detailed_scores[k] / total, 2)
+        total = sum(base.values())
+        detailed_scores = {k: round(v / total, 2) for k, v in base.items()}
 
         return jsonify({
-            "sentiment": sentiment.lower(),  # ✅ lowercase for UI
+            "sentiment": sentiment,
             "confidence": confidence,
             "detailed_scores": detailed_scores,
             "sources": {
                 "imdb": {
                     "title": title,
                     "year": movie_year,
-                    "imdb_rating": imdb_rating,  # ✅ REAL rating / null
+                    "imdb_rating": imdb_rating,
+                    "imdb_votes": imdb_votes,
                     "plot": plot,
                     "poster": poster
                 }
@@ -198,35 +187,16 @@ def analyze_movie():
         }), 200
 
     except Exception as e:
-        print("🔥 Server Movie Error:", str(e))
-        return jsonify({
-            "error": "Movie analysis failed",
-            "details": str(e),
-            "sources": {
-                "imdb": {
-                    "title": title,
-                    "year": year,
-                    "imdb_rating": None,
-                    "plot": "Plot unavailable due to API error",
-                    "poster": None
-                }
-            },
-            "sentiment": "neutral",
-            "confidence": 0.0,
-            "detailed_scores": {
-                "positive": 0.33,
-                "neutral": 0.34,
-                "negative": 0.33
-            }
-        }), 500
+        print("🔥 Error:", str(e))
+        return jsonify({"error": "Movie analysis failed"}), 500
 
 
+# ---------------------- REVIEW ANALYSIS --------------------
 @app.route("/api/analyze/review", methods=["POST"])
 @jwt_required()
 def analyze_review():
     try:
         from sentiment_analyzer import SentimentAnalyzer
-
         data = request.get_json() or {}
         review_text = data.get("review_text")
         movie_name = data.get("movie_name", "")
@@ -242,8 +212,8 @@ def analyze_review():
             "user_id": ObjectId(user_id),
             "movie_name": movie_name,
             "review_text": review_text,
-            "sentiment": result.get("sentiment"),
-            "confidence": result.get("confidence"),
+            "sentiment": result["sentiment"],
+            "confidence": result["confidence"],
             "timestamp": datetime.utcnow()
         })
 
@@ -253,6 +223,7 @@ def analyze_review():
         return jsonify({"error": str(e)}), 500
 
 
+# --------------------- HISTORY ---------------------
 @app.route('/api/history', methods=['GET'])
 @jwt_required()
 def history():
@@ -280,5 +251,6 @@ def test_db():
         return {"error": str(e)}, 500
 
 
+# ------------------ RUN APP --------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
