@@ -137,44 +137,71 @@ def verify():
 # 🟩 ANALYSIS ROUTES
 @app.route('/api/analyze/movie', methods=['POST'])
 def analyze_movie():
-    data = request.get_json() or {}
-
-    title = data.get("title")
-    year = data.get("year", "")
-
-    if not title or title.strip() == "":
-        return jsonify({"error": "Title is required"}), 400
-
-    omdb_api_key = os.getenv("OMDB_API_KEY")
-    omdb_url = f"https://www.omdbapi.com/?t={title}&y={year}&apikey={omdb_api_key}"
-
     try:
+        data = request.get_json() or {}
+
+        title = data.get("title")
+        year = data.get("year", "")
+
+        if not title or title.strip() == "":
+            return jsonify({"error": "Title is required"}), 400
+
+        omdb_api_key = os.getenv("OMDB_API_KEY")
+        omdb_url = f"https://www.omdbapi.com/?t={title}&y={year}&apikey={omdb_api_key}"
+
         movie_resp = requests.get(omdb_url).json()
-        print("OMDB Response:", movie_resp)
 
-        if movie_resp.get("Response") == "True":
-            plot = movie_resp.get("Plot", "No plot available.")
-            poster = movie_resp.get("Poster", "")
-            imdb_rating = movie_resp.get("imdbRating") or "N/A"
-        else:
-            raise Exception("OMDB failed")
+        if movie_resp.get("Response") != "True":
+            raise Exception("Movie not found")
 
-    except:
-        plot = "Mock plot — API unavailable."
-        poster = "https://via.placeholder.com/300x450?text=Movie+Poster"
-        imdb_rating = "N/A"
+        plot = movie_resp.get("Plot", "No plot available.")
+        poster = movie_resp.get("Poster", "")
+        imdb_rating = movie_resp.get("imdbRating") or "N/A"
+        movie_year = movie_resp.get("Year", year)
 
-    sentiment, confidence = analyze_sentiment(plot)
+        # ✅ Sentiment Analysis
+        sentiment, polarity_percent = analyze_sentiment(plot)
+        confidence = round(polarity_percent / 100, 2)  # convert → 0 to 1
 
-    return jsonify({
-        "title": title,
-        "year": year,
-        "imdb_rating": imdb_rating,
-        "plot": plot,
-        "poster": poster,
-        "sentiment": sentiment,
-        "confidence": confidence
-    }), 200
+        # ✅ Balanced & Realistic Chart Scores
+        if sentiment == "POSITIVE":
+            detailed_scores = {
+                "positive": confidence,
+                "neutral": round(1 - confidence, 2),
+                "negative": 0.0
+            }
+        elif sentiment == "NEGATIVE":
+            detailed_scores = {
+                "positive": 0.0,
+                "neutral": round(1 - confidence, 2),
+                "negative": confidence
+            }
+        else:  # NEUTRAL case
+            detailed_scores = {
+                "positive": round(0.3 * confidence, 2),
+                "neutral": round(1 - confidence, 2),
+                "negative": round(0.3 * confidence, 2)
+            }
+
+        return jsonify({
+            "sentiment": sentiment,
+            "confidence": confidence,
+            "detailed_scores": detailed_scores,
+            "sources": {
+                "imdb": {
+                    "title": title,
+                    "year": movie_year,
+                    "imdb_rating": imdb_rating,
+                    "plot": plot,
+                    "poster": poster
+                }
+            }
+        }), 200
+
+    except Exception as e:
+        print("🔥 Movie Error:", str(e))
+        return jsonify({"error": "Movie not found or OMDB error"}), 500
+
 
 
 @app.route("/api/analyze/review", methods=["POST"])
