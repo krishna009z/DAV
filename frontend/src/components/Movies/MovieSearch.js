@@ -40,45 +40,53 @@ function MovieSearch() {
 
       if (data.error) {
         setError(data.error);
-      } else {
-        const mappedResult = {
-          sentiment: data.sentiment,
-          confidence: data.confidence || 0,
-          detailed_scores: data.detailed_scores || {
-            positive: 0,
-            neutral: 0,
-            negative: 0,
-          },
-          sources: {
-            imdb: {
-              title: data.title || movieName,
-              year: data.year || movieYear || "N/A",
-              imdb_rating: data.imdb_rating || "N/A",
-              plot: data.plot || "Plot unavailable",
-              poster: data.poster,
-            },
-          },
-        };
-
-        setResult(mappedResult);
+        return;
       }
+
+      const imdb = data.sources?.imdb || {};
+
+      const mappedResult = {
+        sentiment: data.sentiment,
+        confidence: data.confidence || 0,
+        detailed_scores: data.detailed_scores || {
+          positive: 0,
+          neutral: 0,
+          negative: 0,
+        },
+        sources: {
+          imdb: {
+            title: imdb.title || movieName,
+            year: imdb.year || movieYear || "N/A",
+            imdb_rating: imdb.imdb_rating !== null ? imdb.imdb_rating : "N/A",
+            plot: imdb.plot || "Plot unavailable",
+            poster: imdb.poster && imdb.poster !== "N/A"
+              ? imdb.poster
+              : "https://via.placeholder.com/300x450?text=No+Image",
+          },
+        },
+      };
+
+      setResult(mappedResult);
+
     } catch (err) {
       console.error("❌ API failed:", err.message);
 
+      setError("Movie not found — showing mock data");
+
       setResult({
-        sentiment: "positive",
-        confidence: 0.92,
+        sentiment: "neutral",
+        confidence: 0.50,
         detailed_scores: {
-          positive: 0.75,
-          neutral: 0.15,
-          negative: 0.1,
+          positive: 0.33,
+          neutral: 0.34,
+          negative: 0.33,
         },
         sources: {
           imdb: {
             title: movieName,
             year: movieYear || "2024",
-            imdb_rating: "8.2",
-            plot: "Mock plot — API unavailable.",
+            imdb_rating: "N/A",
+            plot: "Plot unavailable — API failed.",
             poster: "https://via.placeholder.com/300x450?text=Movie+Poster"
           },
         },
@@ -155,29 +163,25 @@ function MovieSearch() {
         {result && result.sources?.imdb && (
           <div className="search-results fade-in">
 
-            {/* ✅ Compact Movie Header with IMDb + Sentiment */}
             <div className="result-movie-info card compact-header">
               <div className="movie-poster-large">
                 {result.sources.imdb.poster ? (
                   <img src={result.sources.imdb.poster} alt="Movie Poster" />
-                ) : (
-                  <Film size={64} />
-                )}
+                ) : <Film size={64} />}
               </div>
 
               <div className="movie-header-details">
                 <h2 className="movie-title">{result.sources.imdb.title}</h2>
                 <div className="movie-meta">
+
                   <span className="movie-year">{result.sources.imdb.year}</span>
 
-                  {/* ⭐ IMDb Rating */}
                   <span className="imdb-badge">
                     ⭐ {result.sources.imdb.imdb_rating !== "N/A"
                       ? `${result.sources.imdb.imdb_rating}/10`
                       : "N/A"}
                   </span>
 
-                  {/* 🔥 Sentiment Badge */}
                   <span className={`sentiment-badge ${result.sentiment?.toLowerCase()}`}>
                     {result.sentiment?.toUpperCase()} • {(result.confidence * 100).toFixed(1)}%
                   </span>
@@ -187,7 +191,6 @@ function MovieSearch() {
               </div>
             </div>
 
-            {/* ✅ Sentiment Pie + Bar Charts */}
             {result.detailed_scores && (
               <div className="card">
                 <h3>Sentiment Distribution</h3>
