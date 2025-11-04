@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import SentimentChart from '../Charts/SentimentChart';
-import { Search, Film, Star, TrendingUp } from 'lucide-react';
+import { Search, Film, TrendingUp } from 'lucide-react';
 import './MovieSearch.css';
 
 function MovieSearch() {
@@ -29,20 +29,23 @@ function MovieSearch() {
       const response = await axios.post(
         `${API_URL}/analyze/movie`,
         {
-          title: movieName,   // ✅ corrected field
+          title: movieName,
           year: movieYear || null
         },
         { headers: getAuthHeader() }
       );
 
-      if (response.data.error) {
-        setError(response.data.error);
+      const data = response.data;
+      console.log("✅ API Response:", data);
+
+      if (data.error) {
+        setError(data.error);
       } else {
-        setResult(response.data);
+        setResult(data);
       }
 
     } catch (err) {
-      console.error("Movie search API failed, using mock:", err.message);
+      console.error("❌ API failed, using mock data:", err.message);
 
       const mockResult = {
         sentiment: "positive",
@@ -79,14 +82,9 @@ function MovieSearch() {
   };
 
   const popularMovies = [
-    "The Shawshank Redemption",
-    "The Dark Knight",
-    "Inception",
-    "Pulp Fiction",
-    "Forrest Gump",
-    "The Matrix",
-    "Interstellar",
-    "Parasite"
+    "The Shawshank Redemption", "The Dark Knight", "Inception",
+    "Pulp Fiction", "Forrest Gump", "The Matrix",
+    "Interstellar", "Parasite"
   ];
 
   return (
@@ -147,12 +145,12 @@ function MovieSearch() {
           <p className="info-note"><strong>Tip:</strong> Add year if movie name is common</p>
         </div>
 
-        {result && result.sources && result.sources.imdb && (
+        {result && result.sources?.imdb && (
           <div className="search-results fade-in">
             <div className="result-movie-info card">
               <div className="movie-poster-large">
                 {result.sources.imdb.poster ?
-                  <img src={result.sources.imdb.poster} alt="" /> :
+                  <img src={result.sources.imdb.poster} alt="Movie Poster" /> :
                   <Film size={64} />}
               </div>
 
