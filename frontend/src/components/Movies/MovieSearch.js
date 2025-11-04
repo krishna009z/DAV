@@ -36,18 +36,38 @@ function MovieSearch() {
       );
 
       const data = response.data;
-      console.log("✅ API Response:", data); // <-- Debug line added
+      console.log("✅ API Response:", data);
 
       if (data.error) {
         setError(data.error);
       } else {
-        setResult(data);
+        // ✅ Map backend response to UI structure
+        const mappedResult = {
+          sentiment: data.sentiment,
+          confidence: data.confidence || 0,
+          detailed_scores: data.detailed_scores || {
+            positive: 0,
+            neutral: 0,
+            negative: 0,
+          },
+          sources: {
+            imdb: {
+              title: data.title || movieName,
+              year: data.year || movieYear || "N/A",
+              imdb_rating: data.imdb_rating || "N/A",
+              plot: data.plot || "Plot unavailable",
+              poster: data.poster
+            }
+          }
+        };
+
+        setResult(mappedResult);
       }
 
     } catch (err) {
       console.error("❌ API failed:", err.message);
 
-      const mockResult = {
+      setResult({
         sentiment: "positive",
         confidence: 0.92,
         detailed_scores: {
@@ -60,22 +80,11 @@ function MovieSearch() {
             title: movieName,
             year: movieYear || "2024",
             imdb_rating: "8.2",
-            imdb_votes: "150,000",
             plot: "Mock plot — API unavailable.",
             poster: "https://via.placeholder.com/300x450?text=Movie+Poster"
-          },
-          plot_analysis: {
-            vader_scores: {
-              compound: 0.81,
-              positive: 0.70,
-              neutral: 0.20,
-              negative: 0.10
-            }
           }
         }
-      };
-
-      setResult(mockResult);
+      });
     } finally {
       setLoading(false);
     }
@@ -147,6 +156,7 @@ function MovieSearch() {
 
         {result && result.sources?.imdb && (
           <div className="search-results fade-in">
+
             <div className="result-movie-info card">
               <div className="movie-poster-large">
                 {result.sources.imdb.poster ?
@@ -157,21 +167,24 @@ function MovieSearch() {
               <div className="movie-details">
                 <h2>{result.sources.imdb.title}</h2>
                 <p>{result.sources.imdb.year}</p>
-                <p><strong>IMDB:</strong> {result.sources.imdb.imdb_rating}</p>
+                <p><strong>IMDB Rating:</strong> {result.sources.imdb.imdb_rating}</p>
                 <p>{result.sources.imdb.plot}</p>
               </div>
             </div>
 
             <div className="card">
               <TrendingUp size={32} />
-              <h3>Sentiment: {result.sentiment.toUpperCase()}</h3>
+              <h3>Sentiment: {result.sentiment?.toUpperCase()}</h3>
               <p>Confidence: {(result.confidence * 100).toFixed(1)}%</p>
             </div>
 
-            <div className="card">
-              <h3>Sentiment Distribution</h3>
-              <SentimentChart data={result.detailed_scores} />
-            </div>
+            {result.detailed_scores && (
+              <div className="card">
+                <h3>Sentiment Distribution</h3>
+                <SentimentChart data={result.detailed_scores} />
+              </div>
+            )}
+
           </div>
         )}
       </div>
