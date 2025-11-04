@@ -54,7 +54,7 @@ def expired_token_callback(jwt_header, jwt_payload):
 # -------------------
 # Authentication Routes
 # -------------------
-@app.route('/api/auth/signup', methods=['POST'])
+@app.route('/api/signup', methods=['POST'])
 def signup():
     try:
         data = request.get_json() or {}
@@ -97,7 +97,7 @@ def signup():
         print(f"Signup error: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/auth/login', methods=['POST'])
+@app.route('/api/login', methods=['POST'])
 def login():
     try:
         data = request.get_json() or {}
@@ -128,7 +128,7 @@ def login():
         print(f"Login error: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/auth/verify', methods=['GET'])
+@app.route('/api/verify', methods=['GET'])
 @jwt_required()
 def verify_token():
     try:
