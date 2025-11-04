@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import SentimentChart from '../Charts/SentimentChart';
-import { Search, Film, TrendingUp } from 'lucide-react';
+import { Search, Film } from 'lucide-react';
 import './MovieSearch.css';
 
 function MovieSearch() {
@@ -155,27 +155,36 @@ function MovieSearch() {
         {result && result.sources?.imdb && (
           <div className="search-results fade-in">
 
-            {/* Movie Info */}
-            <div className="result-movie-info card">
+            {/* ✅ Compact Movie Header with IMDb + Sentiment */}
+            <div className="result-movie-info card compact-header">
               <div className="movie-poster-large">
-                {result.sources.imdb.poster ?
-                  <img src={result.sources.imdb.poster} alt="Movie Poster" /> :
-                  <Film size={64} />}
+                {result.sources.imdb.poster ? (
+                  <img src={result.sources.imdb.poster} alt="Movie Poster" />
+                ) : (
+                  <Film size={64} />
+                )}
               </div>
 
-              <div className="movie-details">
-                <h2>{result.sources.imdb.title}</h2>
-                <p>{result.sources.imdb.year}</p>
-                <p><strong>IMDB Rating:</strong> {result.sources.imdb.imdb_rating}</p>
-                <p>{result.sources.imdb.plot}</p>
-              </div>
-            </div>
+              <div className="movie-header-details">
+                <h2 className="movie-title">{result.sources.imdb.title}</h2>
+                <div className="movie-meta">
+                  <span className="movie-year">{result.sources.imdb.year}</span>
 
-            {/* Overall Sentiment */}
-            <div className="card">
-              <TrendingUp size={32} />
-              <h3>Sentiment: {result.sentiment?.toUpperCase()}</h3>
-              <p>Confidence: {(result.confidence * 100).toFixed(1)}%</p>
+                  {/* ⭐ IMDb Rating */}
+                  <span className="imdb-badge">
+                    ⭐ {result.sources.imdb.imdb_rating !== "N/A"
+                      ? `${result.sources.imdb.imdb_rating}/10`
+                      : "N/A"}
+                  </span>
+
+                  {/* 🔥 Sentiment Badge */}
+                  <span className={`sentiment-badge ${result.sentiment?.toLowerCase()}`}>
+                    {result.sentiment?.toUpperCase()} • {(result.confidence * 100).toFixed(1)}%
+                  </span>
+                </div>
+
+                <p className="movie-plot">{result.sources.imdb.plot}</p>
+              </div>
             </div>
 
             {/* ✅ Sentiment Pie + Bar Charts */}
