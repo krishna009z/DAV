@@ -36,7 +36,7 @@ function MovieSearch() {
       );
 
       const data = response.data;
-      console.log("✅ API Response:", data);
+      console.log("✅ API Response:", data); // <-- Debug line added
 
       if (data.error) {
         setError(data.error);
@@ -45,7 +45,7 @@ function MovieSearch() {
       }
 
     } catch (err) {
-      console.error("❌ API failed, using mock data:", err.message);
+      console.error("❌ API failed:", err.message);
 
       const mockResult = {
         sentiment: "positive",
